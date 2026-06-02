@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Full_Frkn_Proper - Enterprise AI Suite</title>
+    <script src="https://js.puter.com/v2/"></script>
     <style>
         * {
             margin: 0;
@@ -360,7 +361,7 @@
                 <div class="status-dot"></div>
                 <span>Connected</span>
             </div>
-            <div class="model-count" id="modelCount">420+ AI Models Ready</div>
+            <div class="model-count" id="modelCount">Loading models...</div>
             <button class="new-chat-btn" onclick="newChat()">+ NEW CHAT</button>
             <div class="chat-history"></div>
         </div>
@@ -386,18 +387,33 @@
     </div>
 
     <script>
-        const API_ENDPOINTS = {
-            'Claude Opus 4.8': 'https://api.anthropic.com/v1/messages',
-            'GPT-5.5': 'https://api.openai.com/v1/chat/completions',
-            'Gemini 3.1': 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent',
-            'Mistral Large': 'https://api.mistral.ai/v1/chat/completions',
-            'Llama 3.1': 'https://api.together.xyz/v1/chat/completions',
-            'Cohere': 'https://api.cohere.ai/v1/chat',
-            'Perplexity': 'https://api.perplexity.ai/chat/completions',
-            'Grok': 'https://api.x.ai/v1/chat/completions'
+        // Exact model names from Puter.js documentation
+        const MODELS = {
+            'Claude Opus 4.8': 'claude-opus-4-8',
+            'GPT-5.5': 'gpt-5.5',
+            'Gemini 3.1 Flash': 'google/gemini-3.1-flash-lite',
+            'Mistral Large': 'mistralai/mistral-large-2512',
+            'Llama 3.1': 'meta-llama/llama-3.1-8b-instruct',
+            'Cohere Command R+': 'cohere/command-r-plus-08-2024',
+            'Perplexity Sonar': 'perplexity/sonar-pro',
+            'Grok 4.1': 'x-ai/grok-4-1-fast'
         };
 
         let messages = [];
+        let modelCount = 0;
+
+        async function initializePuter() {
+            try {
+                // Check if puter is available
+                if (typeof puter !== 'undefined') {
+                    modelCount = Object.keys(MODELS).length;
+                    document.getElementById('modelCount').textContent = `${modelCount} AI Models Ready`;
+                    console.log('Puter.js initialized successfully');
+                }
+            } catch (error) {
+                console.error('Puter initialization error:', error);
+            }
+        }
 
         function newChat() {
             messages = [];
@@ -408,6 +424,51 @@
                     <p>Upload files or type a message to begin</p>
                 </div>
             `;
+        }
+
+        async function queryAllModels(prompt) {
+            const responses = [];
+            
+            for (const [modelName, modelId] of Object.entries(MODELS)) {
+                try {
+                    console.log(`Querying ${modelName} (${modelId})...`);
+                    
+                    const response = await puter.ai.chat(prompt, {
+                        model: modelId
+                    });
+
+                    // Extract text from response
+                    let text = '';
+                    if (typeof response === 'string') {
+                        text = response;
+                    } else if (response.message && response.message.content) {
+                        if (Array.isArray(response.message.content)) {
+                            text = response.message.content[0]?.text || JSON.stringify(response.message.content);
+                        } else {
+                            text = response.message.content;
+                        }
+                    } else if (response.text) {
+                        text = response.text;
+                    } else {
+                        text = JSON.stringify(response);
+                    }
+
+                    responses.push({
+                        model: modelName,
+                        response: text || 'No response received'
+                    });
+                    
+                    console.log(`✓ ${modelName} responded`);
+                } catch (error) {
+                    console.error(`✗ Error with ${modelName}:`, error);
+                    responses.push({
+                        model: modelName,
+                        response: `⚠️ Error: ${error.message || 'Model unavailable'}`
+                    });
+                }
+            }
+
+            return responses;
         }
 
         async function sendMessage() {
@@ -423,23 +484,17 @@
             addMessage('<div class="loading"><div class="spinner"></div>Getting responses from all models...</div>', 'ai', loadingId);
 
             try {
-                // For now, show a demo response since we don't have API keys
+                const responses = await queryAllModels(message);
                 removeMessage(loadingId);
                 
-                const demoResponses = {
-                    'Claude Opus 4.8': 'I\'m Claude Opus 4.8, Anthropic\'s most capable model. I can help with complex reasoning, analysis, and creative tasks.',
-                    'GPT-5.5': 'Hello! I\'m GPT-5.5 from OpenAI. I can assist with a wide range of tasks including writing, coding, and analysis.',
-                    'Gemini 3.1': 'I\'m Gemini 3.1 from Google. I excel at understanding context and providing comprehensive responses.',
-                    'Mistral Large': 'Greetings! I\'m Mistral Large. I\'m optimized for complex tasks and can handle large context windows.',
-                    'Llama 3.1': 'I\'m Llama 3.1 from Meta. I\'m an open-source model trained to be helpful and harmless.',
-                    'Cohere': 'Hello! I\'m Cohere\'s Command model. I\'m designed for enterprise applications and semantic search.',
-                    'Perplexity': 'I\'m Perplexity AI. I specialize in providing accurate, sourced information with real-time web search.',
-                    'Grok': 'I\'m Grok from xAI. I have a unique perspective and can engage with complex topics.'
-                };
-
-                for (const [model, response] of Object.entries(demoResponses)) {
-                    addMessage(response, 'ai', `model-${model}`);
+                if (responses.length === 0) {
+                    addMessage('<div class="error-message">⚠️ No AI models available. Please try again.</div>', 'ai');
+                    return;
                 }
+                
+                responses.forEach(({ model, response }) => {
+                    addMessage(response, 'ai', `model-${model}`);
+                });
 
             } catch (error) {
                 console.error('Error:', error);
@@ -448,7 +503,7 @@
             }
         }
 
-        function handleFileUpload(event) {
+        async function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
@@ -458,26 +513,39 @@
             addMessage('<div class="loading"><div class="spinner"></div>Processing file with all AI models...</div>', 'ai', loadingId);
 
             try {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    removeMessage(loadingId);
-                    
-                    const demoAnalysis = {
-                        'Claude Opus 4.8': `I've analyzed "${file.name}" (${(file.size / 1024).toFixed(2)} KB). This appears to be a ${file.type || 'file'} that I can process and provide detailed insights on.`,
-                        'GPT-5.5': `File "${file.name}" received. I can provide analysis and insights based on its content and type.`,
-                        'Gemini 3.1': `Analyzing "${file.name}"... I can extract key information and provide comprehensive analysis.`,
-                        'Mistral Large': `Processing "${file.name}"... Ready to provide detailed analysis and insights.`,
-                        'Llama 3.1': `File received: "${file.name}". I can help analyze and understand its contents.`,
-                        'Cohere': `"${file.name}" has been processed. I can provide semantic analysis and key insights.`,
-                        'Perplexity': `Analyzing "${file.name}"... I can provide sourced insights and relevant information.`,
-                        'Grok': `"${file.name}" analyzed. I can offer unique perspectives on its content.`
-                    };
+                let fileContent = '';
+                
+                if (file.type.startsWith('image/')) {
+                    const base64 = await readFileAsBase64(file);
+                    fileContent = `[IMAGE: ${file.name}] Base64 preview: ${base64.substring(0, 100)}...`;
+                } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+                    fileContent = `[PDF FILE: ${file.name}] Analyzing PDF content...`;
+                } else if (file.type.includes('word') || file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+                    fileContent = `[WORD DOCUMENT: ${file.name}] Analyzing document...`;
+                } else if (file.type.includes('sheet') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')) {
+                    fileContent = `[SPREADSHEET: ${file.name}] Analyzing data...`;
+                } else if (file.type.startsWith('video/')) {
+                    fileContent = `[VIDEO FILE: ${file.name}] Analyzing video...`;
+                } else if (file.type.startsWith('audio/')) {
+                    fileContent = `[AUDIO FILE: ${file.name}] Analyzing audio...`;
+                } else {
+                    fileContent = await readFileAsText(file);
+                }
 
-                    for (const [model, analysis] of Object.entries(demoAnalysis)) {
-                        addMessage(analysis, 'ai', `model-${model}`);
-                    }
-                };
-                reader.readAsArrayBuffer(file);
+                const prompt = `Please analyze this file and provide insights:\n\nFile: ${file.name}\nType: ${file.type || 'Unknown'}\nSize: ${(file.size / 1024).toFixed(2)} KB\n\nContent/Analysis:\n${fileContent}`;
+                
+                const responses = await queryAllModels(prompt);
+                removeMessage(loadingId);
+                
+                if (responses.length === 0) {
+                    addMessage('<div class="error-message">⚠️ No AI models available to analyze file.</div>', 'ai');
+                    return;
+                }
+                
+                responses.forEach(({ model, response }) => {
+                    addMessage(response, 'ai', `model-${model}`);
+                });
+
             } catch (error) {
                 console.error('File processing error:', error);
                 removeMessage(loadingId);
@@ -485,6 +553,24 @@
             }
 
             event.target.value = '';
+        }
+
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
         }
 
         function addMessage(content, role, id = null) {
@@ -500,7 +586,6 @@
             if (id) messageDiv.id = id;
 
             if (role === 'ai' && !content.includes('loading') && !content.includes('error')) {
-                // Extract model name from id
                 const modelName = id ? id.replace('model-', '') : 'AI';
                 messageDiv.innerHTML = `
                     <div class="message-content">
@@ -521,10 +606,8 @@
             if (element) element.remove();
         }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('Full_Frkn_Proper initialized');
-        });
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initializePuter);
     </script>
 </body>
 </html>
