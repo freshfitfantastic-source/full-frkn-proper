@@ -384,6 +384,14 @@
     <script>
         let modelCount = 0;
         let messages = [];
+        const MODELS_TO_USE = [
+            'gpt-4o',
+            'claude-3-opus',
+            'gemini-2.0-flash',
+            'mistral-large',
+            'deepseek-chat',
+            'llama-2-70b-chat'
+        ];
 
         // Initialize Puter.js
         async function initializePuter() {
@@ -407,6 +415,22 @@
         window.addEventListener('load', () => {
             setTimeout(initializePuter, 1000);
         });
+
+        async function queryAllModels(prompt) {
+            const responses = [];
+            const promises = MODELS_TO_USE.map(async (model) => {
+                try {
+                    const response = await puter.ai.chat(prompt, { model });
+                    responses.push({ model, response, success: true });
+                } catch (error) {
+                    console.log(`Model ${model} unavailable:`, error.message);
+                    responses.push({ model, response: null, success: false });
+                }
+            });
+            
+            await Promise.all(promises);
+            return responses.filter(r => r.success);
+        }
 
         function newChat() {
             messages = [];
@@ -464,23 +488,18 @@
 
                 const prompt = `Please analyze this file and provide insights:\n\nFile: ${file.name}\nType: ${file.type || 'Unknown'}\nSize: ${(file.size / 1024).toFixed(2)} KB\n\nContent/Analysis:\n${fileContent}`;
                 
-                let response;
-                try {
-                    response = await puter.ai.chat(prompt, {
-                        model: 'gpt-4o'
-                    });
-                } catch (e) {
-                    try {
-                        response = await puter.ai.chat(prompt, {
-                            model: 'claude-3-opus'
-                        });
-                    } catch (e2) {
-                        response = await puter.ai.chat(prompt);
-                    }
-                }
-
+                const responses = await queryAllModels(prompt);
                 removeMessage(loadingId);
-                addMessage(response, 'ai', 'claude-opus-file');
+                
+                if (responses.length === 0) {
+                    addMessage('<div class="error-message">⚠️ No AI models available to analyze file.</div>', 'ai');
+                    return;
+                }
+                
+                responses.forEach(({ model, response }) => {
+                    const modelName = model.replace(/\//g, ' ').toUpperCase();
+                    addMessage(response, 'ai', `model-${model}-file`);
+                });
 
             } catch (error) {
                 console.error('File processing error:', error);
@@ -520,23 +539,18 @@
             addMessage('<div class="loading"><div class="spinner"></div>Getting responses from all models...</div>', 'ai', loadingId);
 
             try {
-                let response;
-                try {
-                    response = await puter.ai.chat(message, {
-                        model: 'gpt-4o'
-                    });
-                } catch (e) {
-                    try {
-                        response = await puter.ai.chat(message, {
-                            model: 'claude-3-opus'
-                        });
-                    } catch (e2) {
-                        response = await puter.ai.chat(message);
-                    }
-                }
-
+                const responses = await queryAllModels(message);
                 removeMessage(loadingId);
-                addMessage(response, 'ai', 'claude-opus');
+                
+                if (responses.length === 0) {
+                    addMessage('<div class="error-message">⚠️ No AI models available. Please try again.</div>', 'ai');
+                    return;
+                }
+                
+                responses.forEach(({ model, response }) => {
+                    const modelName = model.replace(/\//g, ' ').toUpperCase();
+                    addMessage(response, 'ai', `model-${model}`);
+                });
 
             } catch (error) {
                 console.error('Error:', error);
