@@ -361,7 +361,7 @@
                 <div class="status-dot"></div>
                 <span>Connected</span>
             </div>
-            <div class="model-count" id="modelCount">Loading models...</div>
+            <div class="model-count">8 AI Models Ready</div>
             <button class="new-chat-btn" onclick="newChat()">+ NEW CHAT</button>
             <div class="chat-history"></div>
         </div>
@@ -387,33 +387,19 @@
     </div>
 
     <script>
-        // Exact model names from Puter.js documentation
+        // Exact model names from Puter.js documentation - NO PREFIXES
         const MODELS = {
             'Claude Opus 4.8': 'claude-opus-4-8',
+            'Claude Haiku': 'claude-haiku-4-5',
             'GPT-5.5': 'gpt-5.5',
-            'Gemini 3.1 Flash': 'google/gemini-3.1-flash-lite',
+            'GPT-5 Nano': 'gpt-5-nano',
             'Mistral Large': 'mistralai/mistral-large-2512',
+            'Mistral Medium': 'mistralai/mistral-medium-3-5',
             'Llama 3.1': 'meta-llama/llama-3.1-8b-instruct',
-            'Cohere Command R+': 'cohere/command-r-plus-08-2024',
-            'Perplexity Sonar': 'perplexity/sonar-pro',
-            'Grok 4.1': 'x-ai/grok-4-1-fast'
+            'Cohere Command R+': 'cohere/command-r-plus-08-2024'
         };
 
         let messages = [];
-        let modelCount = 0;
-
-        async function initializePuter() {
-            try {
-                // Check if puter is available
-                if (typeof puter !== 'undefined') {
-                    modelCount = Object.keys(MODELS).length;
-                    document.getElementById('modelCount').textContent = `${modelCount} AI Models Ready`;
-                    console.log('Puter.js initialized successfully');
-                }
-            } catch (error) {
-                console.error('Puter initialization error:', error);
-            }
-        }
 
         function newChat() {
             messages = [];
@@ -433,22 +419,25 @@
                 try {
                     console.log(`Querying ${modelName} (${modelId})...`);
                     
+                    // Use exact format from guides
                     const response = await puter.ai.chat(prompt, {
                         model: modelId
                     });
 
-                    // Extract text from response
+                    // Extract text using exact format from guides
                     let text = '';
-                    if (typeof response === 'string') {
-                        text = response;
-                    } else if (response.message && response.message.content) {
+                    
+                    if (response && response.message && response.message.content) {
+                        // Handle array format: response.message.content[0].text
                         if (Array.isArray(response.message.content)) {
                             text = response.message.content[0]?.text || JSON.stringify(response.message.content);
-                        } else {
+                        } else if (typeof response.message.content === 'string') {
                             text = response.message.content;
+                        } else {
+                            text = JSON.stringify(response.message.content);
                         }
-                    } else if (response.text) {
-                        text = response.text;
+                    } else if (typeof response === 'string') {
+                        text = response;
                     } else {
                         text = JSON.stringify(response);
                     }
@@ -605,9 +594,6 @@
             const element = document.getElementById(id);
             if (element) element.remove();
         }
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', initializePuter);
     </script>
 </body>
 </html>
