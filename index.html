@@ -464,9 +464,20 @@
 
                 const prompt = `Please analyze this file and provide insights:\n\nFile: ${file.name}\nType: ${file.type || 'Unknown'}\nSize: ${(file.size / 1024).toFixed(2)} KB\n\nContent/Analysis:\n${fileContent}`;
                 
-                const response = await puter.ai.chat(prompt, {
-                    model: 'anthropic/claude-opus-4.8'
-                });
+                let response;
+                try {
+                    response = await puter.ai.chat(prompt, {
+                        model: 'gpt-4o'
+                    });
+                } catch (e) {
+                    try {
+                        response = await puter.ai.chat(prompt, {
+                            model: 'claude-3-opus'
+                        });
+                    } catch (e2) {
+                        response = await puter.ai.chat(prompt);
+                    }
+                }
 
                 removeMessage(loadingId);
                 addMessage(response, 'ai', 'claude-opus-file');
@@ -509,9 +520,20 @@
             addMessage('<div class="loading"><div class="spinner"></div>Getting responses from all models...</div>', 'ai', loadingId);
 
             try {
-                const response = await puter.ai.chat(message, {
-                    model: 'anthropic/claude-opus-4.8'
-                });
+                let response;
+                try {
+                    response = await puter.ai.chat(message, {
+                        model: 'gpt-4o'
+                    });
+                } catch (e) {
+                    try {
+                        response = await puter.ai.chat(message, {
+                            model: 'claude-3-opus'
+                        });
+                    } catch (e2) {
+                        response = await puter.ai.chat(message);
+                    }
+                }
 
                 removeMessage(loadingId);
                 addMessage(response, 'ai', 'claude-opus');
