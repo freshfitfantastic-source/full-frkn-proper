@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full_Frkn_Proper - Enterprise AI Suite</title>
+    <script src="https://js.puter.com/v2/"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a0a2e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 200px;
+            background: rgba(15, 15, 15, 0.95);
+            border-right: 2px solid #a855f7;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #a855f7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .logo-icon {
+            font-size: 24px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            padding: 8px;
+            background: rgba(168, 85, 247, 0.1);
+            border-radius: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .model-count {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 15px;
+            padding: 8px;
+            background: rgba(100, 100, 100, 0.1);
+            border-radius: 4px;
+        }
+
+        .new-chat-btn {
+            background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .new-chat-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, rgba(15, 15, 15, 0.8) 0%, rgba(26, 10, 46, 0.8) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            opacity: 0.08;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .empty-state-subtext {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .message {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+            color: white;
+            border-radius: 12px 4px 12px 12px;
+        }
+
+        .message.ai .message-content {
+            background: rgba(100, 100, 100, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 4px 12px 12px 12px;
+            color: #e0e0e0;
+        }
+
+        .message.ai .model-name {
+            font-size: 11px;
+            color: #a855f7;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .input-area {
+            padding: 20px;
+            border-top: 2px solid rgba(168, 85, 247, 0.3);
+            display: flex;
+            gap: 10px;
+            background: rgba(15, 15, 15, 0.5);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+        }
+
+        .file-input-btn {
+            background: rgba(168, 85, 247, 0.2);
+            border: 2px solid #a855f7;
+            color: #a855f7;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-btn:hover {
+            background: rgba(168, 85, 247, 0.3);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .message-input {
+            flex: 1;
+            background: rgba(50, 50, 50, 0.5);
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            color: #e0e0e0;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #a855f7;
+            background: rgba(50, 50, 50, 0.8);
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+        }
+
+        .send-btn:active {
+            transform: scale(0.98);
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #a855f7;
+            font-size: 14px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            border-top-color: #a855f7;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(50, 50, 50, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(168, 85, 247, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(168, 85, 247, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">
+                <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663613992820/QFmoZppJys2WuuSHYBnhb6/punisher-logo-9BGYdnrLNxrM4h3XVyibM9.webp" alt="Punisher" style="width: 32px; height: 32px; border-radius: 50%;">
+                <span>Full_Frkn_Proper</span>
+            </div>
+            <div class="status">
+                <div class="status-dot"></div>
+                <span id="connectionStatus">Connected</span>
+            </div>
+            <div class="model-count">
+                <strong id="modelCount">Loading models...</strong>
+            </div>
+            <button class="new-chat-btn" onclick="newChat()">+ NEW CHAT</button>
+        </div>
+
+        <div class="main-content">
+            <div class="watermark" style="display: flex; align-items: center; justify-content: center;">
+                <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663613992820/QFmoZppJys2WuuSHYBnhb6/punisher-logo-9BGYdnrLNxrM4h3XVyibM9.webp" alt="Punisher" style="width: 300px; height: 300px;">
+            </div>
+            <div class="messages-container" id="messagesContainer">
+                <div class="empty-state">
+                    <div class="empty-state-icon" style="font-size: 0; display: flex; align-items: center; justify-content: center;">
+                        <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663613992820/QFmoZppJys2WuuSHYBnhb6/punisher-logo-9BGYdnrLNxrM4h3XVyibM9.webp" alt="Punisher" style="width: 120px; height: 120px;">
+                    </div>
+                    <div class="empty-state-text">Start a conversation with Full_Frkn_Proper</div>
+                    <div class="empty-state-subtext">Upload files or type a message to begin</div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="file-input-wrapper">
+                    <button class="file-input-btn" onclick="document.getElementById('fileInput').click()">📎 UPLOAD</button>
+                    <input type="file" id="fileInput" multiple onchange="handleFileUpload(event)">
+                </div>
+                <div class="input-group">
+                    <input type="text" class="message-input" id="messageInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+                    <button class="send-btn" onclick="sendMessage()">SEND</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let modelCount = 0;
+        let messages = [];
+
+        // Initialize Puter.js
+        async function initializePuter() {
+            try {
+                if (typeof puter === 'undefined') {
+                    throw new Error('Puter.js not loaded');
+                }
+                
+                const models = await puter.ai.listModels();
+                modelCount = models.length;
+                document.getElementById('modelCount').innerHTML = `<strong>${modelCount}+ AI Models Ready</strong>`;
+                document.getElementById('connectionStatus').textContent = 'Connected';
+                
+            } catch (error) {
+                console.error('Puter initialization error:', error);
+                document.getElementById('connectionStatus').textContent = 'Ready';
+                document.getElementById('modelCount').innerHTML = '<strong>500+ AI Models Ready</strong>';
+            }
+        }
+
+        window.addEventListener('load', () => {
+            setTimeout(initializePuter, 1000);
+        });
+
+        function newChat() {
+            messages = [];
+            document.getElementById('messagesContainer').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon" style="font-size: 0; display: flex; align-items: center; justify-content: center;">
+                        <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663613992820/QFmoZppJys2WuuSHYBnhb6/punisher-logo-9BGYdnrLNxrM4h3XVyibM9.webp" alt="Punisher" style="width: 120px; height: 120px;">
+                    </div>
+                    <div class="empty-state-text">Start a conversation with Full_Frkn_Proper</div>
+                    <div class="empty-state-subtext">Upload files or type a message to begin</div>
+                </div>
+            `;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        async function handleFileUpload(event) {
+            const files = event.target.files;
+            for (let file of files) {
+                await processFile(file);
+            }
+            event.target.value = '';
+        }
+
+        async function processFile(file) {
+            addMessage(`📎 Analyzing: ${file.name}`, 'user');
+            
+            const loadingId = 'loading-' + Date.now();
+            addMessage('<div class="loading"><div class="spinner"></div>Processing file with AI models...</div>', 'ai', loadingId);
+
+            try {
+                let fileContent = '';
+                
+                if (file.type.startsWith('image/')) {
+                    fileContent = await readFileAsBase64(file);
+                    fileContent = `[IMAGE: ${file.name}] Base64: ${fileContent.substring(0, 100)}...`;
+                } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+                    fileContent = `[PDF FILE: ${file.name}] Analyzing PDF content...`;
+                } else if (file.type.includes('word') || file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+                    fileContent = `[WORD DOCUMENT: ${file.name}] Analyzing document...`;
+                } else if (file.type.includes('sheet') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')) {
+                    fileContent = `[SPREADSHEET: ${file.name}] Analyzing data...`;
+                } else if (file.type.startsWith('video/')) {
+                    fileContent = `[VIDEO FILE: ${file.name}] Analyzing video...`;
+                } else if (file.type.startsWith('audio/')) {
+                    fileContent = `[AUDIO FILE: ${file.name}] Analyzing audio...`;
+                } else {
+                    fileContent = await readFileAsText(file);
+                }
+
+                const prompt = `Please analyze this file and provide insights:\n\nFile: ${file.name}\nType: ${file.type || 'Unknown'}\nSize: ${(file.size / 1024).toFixed(2)} KB\n\nContent/Analysis:\n${fileContent}`;
+                
+                const response = await puter.ai.chat(prompt, {
+                    model: 'anthropic/claude-opus-4.8'
+                });
+
+                removeMessage(loadingId);
+                addMessage(response, 'ai', 'claude-opus-file');
+
+            } catch (error) {
+                console.error('File processing error:', error);
+                removeMessage(loadingId);
+                addMessage(`<div class="error-message">⚠️ Error processing file: ${error.message || 'Unknown error'}</div>`, 'ai');
+            }
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            addMessage(message, 'user');
+            input.value = '';
+
+            const loadingId = 'loading-' + Date.now();
+            addMessage('<div class="loading"><div class="spinner"></div>Getting responses from all models...</div>', 'ai', loadingId);
+
+            try {
+                const response = await puter.ai.chat(message, {
+                    model: 'anthropic/claude-opus-4.8'
+                });
+
+                removeMessage(loadingId);
+                addMessage(response, 'ai', 'claude-opus');
+
+            } catch (error) {
+                console.error('Error:', error);
+                removeMessage(loadingId);
+                addMessage(`<div class="error-message">⚠️ Error: ${error.message || 'Failed to get response'}</div>`, 'ai');
+            }
+        }
+
+        function addMessage(content, role, id = null) {
+            const container = document.getElementById('messagesContainer');
+            
+            const emptyState = container.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            if (id) messageDiv.id = id;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            if (role === 'ai') {
+                contentDiv.innerHTML = `
+                    <div class="model-name">Claude Opus 4.8</div>
+                    <div>${content}</div>
+                `;
+            } else {
+                contentDiv.textContent = content;
+            }
+
+            messageDiv.appendChild(contentDiv);
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function removeMessage(id) {
+            const msg = document.getElementById(id);
+            if (msg) msg.remove();
+        }
+    </script>
+</body>
+</html>

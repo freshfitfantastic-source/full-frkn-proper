@@ -1,0 +1,13 @@
+{
+  "name": "full-frkn-proper",
+  "version": "1.0.0",
+  "description": "Enterprise AI Suite with 500+ Models",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "dev": "python3 -m http.server 8000"
+  },
+  "keywords": ["ai", "puter", "enterprise"],
+  "author": "Full_Frkn_Proper",
+  "license": "MIT"
+}
